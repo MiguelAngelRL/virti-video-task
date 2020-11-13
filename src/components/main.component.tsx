@@ -1,16 +1,16 @@
 import React from 'react';
 import '../App.css';
-import {videoUri, videoPlayerWidth} from '../common';
-
 import {VideoPlayerComponent, ImageComponent, ImageInterface} from '../common'
 
 interface Props {
   imagesState: {[image:string]: ImageInterface};
   progressUpdate: (time: number) => void;
+  videoUri:string
+  videoPlayerWidth:string
 }
 
 export const MainComponent: React.FC<Props> = (props) => {
-    const {imagesState, progressUpdate} = props;
+    const {imagesState, progressUpdate, videoUri, videoPlayerWidth} = props;
     return (
       <div className="Video-container">
         <VideoPlayerComponent 

@@ -1,5 +1,7 @@
 import {ImageInterface} from '../common';
 
+export type imagesStateCustomType = {[name:string]: ImageInterface};
+
 export const isShowingNow = (image: ImageInterface): boolean => {
   return image.showImage;
 }

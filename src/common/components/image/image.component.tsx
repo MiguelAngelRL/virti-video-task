@@ -9,6 +9,6 @@ export const ImageComponent: React.FC<Props> = (props) => {
     const {image} = props;
     const {uri, showImage} = image;
     return (
-        uri && showImage && <img src={uri} />
+        uri && showImage && <img src={uri} alt=""/>
     )
 }

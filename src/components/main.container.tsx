@@ -1,75 +1,56 @@
 import React from 'react';
-import {ImageInterface, imagesInitialState,videoUri, videoPlayerWidth} from '../common';
+import { ImageInterface, imagesInitialState,videoUri, videoPlayerWidth} from '../common';
 import { MainComponent } from './main.component';
-import {isImageInTimeRange, maxOcurrencesNotReached, isShowingNow} from './main.business'
+import { imagesStateCustomType, isImageInTimeRange, isShowingNow, maxOcurrencesNotReached } from './main.business';
 
 interface Props {
 }
 
-type ImagesState = {[name:string]: ImageInterface};
-
 export const MainContainer: React.FC<Props> = (props) => {
-    const [imagesState, setImagesState] = React.useState(imagesInitialState);
+    const [imagesState, setImagesState] = React.useState<imagesStateCustomType>(imagesInitialState);
 
     const progressUpdate = (currentTime: number) => {
-        if(!currentTime) return;
+        if(!currentTime || !imagesState || !(Object.keys(imagesState).length>0)) return;
+        
+        let newStateToUpdate: imagesStateCustomType = {} as imagesStateCustomType;
+        const imagesNames: string[] = Object.keys(imagesState);
 
-        let newState: {[name: string]: ImageInterface} = {} as ImagesState;
-        newState = updateImageState(currentTime, "image1", newState);
-        newState = updateImageState(currentTime, "image2", newState);
-        newState = updateImageState(currentTime, "image3", newState);
+        imagesNames.forEach((imageName: string) => {
+            const currentImage = imagesState[imageName];                    
+            if (isImageInTimeRange(currentTime, currentImage) && !(isShowingNow(currentImage)) && maxOcurrencesNotReached(currentImage)) {
+                newStateToUpdate = showImage(imageName, newStateToUpdate);
+            } else if (!(isImageInTimeRange(currentTime, currentImage)) && isShowingNow(currentImage)) {
+                newStateToUpdate = hideImage(imageName, newStateToUpdate);
+            }
+        });
 
-        if (newState && Object.keys(newState).length>0) {
-            console.log("State updated");
-            setImagesState(newState);
+        if (newStateToUpdate && Object.keys(newStateToUpdate).length>0) {
+            setImagesState(newStateToUpdate);
         } 
     };
 
-    const updateImageState = 
-        (time : number, imageName : string, newStateReceived: {[name: string]:ImageInterface}) : {[name: string]:ImageInterface}=> {
-            if(!time || !imageName) return newStateReceived;
-            let stateToReturn = newStateReceived;
-            
-            const currentImage = imagesState[imageName];            
-            const timeRange: boolean = isImageInTimeRange(time, currentImage);
-            const isShowing: boolean = isShowingNow(currentImage);
-            const allowedToShow: boolean = maxOcurrencesNotReached(currentImage);
+    const showImage = (imageName: string, newStateToUpdate: imagesStateCustomType): imagesStateCustomType => {
+        const currentImage: ImageInterface = imagesState[imageName];
 
-            if (timeRange && !isShowing && allowedToShow) {
-                stateToReturn = showImage(imageName, newStateReceived);
-            } else if (!timeRange && isShowing) {
-                stateToReturn = hideImage(imageName, newStateReceived);
-            }
-
-            return stateToReturn;
-        }
-
-    const showImage = (imageName: string, newStateReceived: ImagesState): ImagesState => {
-        const oldImageState: ImageInterface = imagesState[imageName];
-        const newImageState = {
-            ...oldImageState,
+        const newImageState: ImageInterface = {
+            ...currentImage,
             showImage: true,
-            timesShowed: oldImageState.timesShowed + 1
+            timesShowed: currentImage.timesShowed + 1
         }
-        return getNewState(imageName, newImageState, newStateReceived);
+        return getNewState(imageName, newImageState, newStateToUpdate);
     }
 
-    const hideImage = (imageName: string, newStateReceived: ImagesState): ImagesState => {
-        const oldImageState: ImageInterface = imagesState[imageName];
-        const newImageState = {
-            ...oldImageState,
+    const hideImage = (imageName: string, newStateToUpdate: imagesStateCustomType): imagesStateCustomType => {
+        const newImageState: ImageInterface = {
+            ...imagesState[imageName],
             showImage: false,
         }
-        return getNewState(imageName, newImageState, newStateReceived);
+        return getNewState(imageName, newImageState, newStateToUpdate);
     }
 
-    const getNewState = (imageName:string, newImageState: ImageInterface, newStateReceived: ImagesState): ImagesState => {
-        const oldState = (newStateReceived && Object.keys(newStateReceived).length>0) ? newStateReceived : imagesState;
-        const newStateToReturn: {[name: string]: ImageInterface} = {
-            ...oldState,
-            [imageName]: {...newImageState}
-        }
-        return newStateToReturn;
+    const getNewState = (imageName:string, newImageState: ImageInterface, newStateToUpdate: imagesStateCustomType): imagesStateCustomType => {
+        const oldState: imagesStateCustomType = (newStateToUpdate && Object.keys(newStateToUpdate).length>0) ? newStateToUpdate : imagesState;        
+        return {...oldState, [imageName]: {...newImageState}};
     }
 
     return (
